@@ -8,39 +8,40 @@ from data.voc_dataset import VOCBboxDataset
 from __future__ import  absolute_import
 from __future__ import  division
 
+# Constants
 mean = [0.485, 0.456, 0.406]
 std = [0.229, 0.224, 0.225]
 
-def inverse_normalize(img):
+
+def inverse_normalize(image):
+	# Caffe pretrained model
     if(opt.caffe_pretrain):
-        img = img + (np.array([122.7717, 115.9465, 102.9801]).reshape(3, 1, 1))
-        return img[::-1, :, :]
-    return (img*0.225+0.45).clip(min=0, max=1)*255
+        image = image + (np.array([122.7717, 115.9465, 102.9801]).reshape(3, 1, 1))
+        return image[::-1, :, :]
+    return (image*0.225+0.45).clip(min=0, max=1)*255
 
-def pytorch_normalize(img):
+def pytorch_normalize(image):
     normalize = transforms.Normalize(mean=mean, std=std)
-    img = (normalize(torch.from_numpy(img))).numpy()
-    return img
+    image = (normalize(torch.from_numpy(image))).numpy()
+    return image
 
-def caffe_normalize(img):
+def caffe_normalize(image):
     # RGB to BGR
-    img = img[[2, 1, 0], :, :]*255
+    image = image[[2, 1, 0], :, :]*255
     mean = np.array([122.7717, 115.9465, 102.9801]).reshape(3, 1, 1)
-    img = (img-mean).astype(np.float32, copy=True)
-    return img
+    image = (image-mean).astype(np.float32, copy=True)
+    return image
 
-def preprocess(img, min_size=600, max_size=1000):
-    C, H, W = img.shape
-    scale1 = min_size/min(H, W)
-    scale2 = max_size/max(H, W)
-    scale = min(scale1, scale2)
-    img = img/255
-    img = transform.resize(img, (C, H*scale, W*scale), mode='reflect', anti_aliasing=False)
+def preprocess(image, min_size=600, max_size=1000):
+    C, H, W = image.shape
+    scale = min(min_size/min(H, W), max_size/max(H, W))
+    image = image/255
+    image = transform.resize(image, (C, H*scale, W*scale), mode='reflect', anti_aliasing=False)
     if(opt.caffe_pretrain):
         normalize = caffe_normalize
     else:
         normalize = pytorch_normalize
-    return normalize(img)
+    return normalize(image)
 
 
 class Transform(object):
@@ -49,18 +50,18 @@ class Transform(object):
         self.max_size = max_size
 
     def __call__(self, in_data):
-        img, bbox, label = in_data
-        _, H, W = img.shape
-        img = preprocess(img, self.min_size, self.max_size)
-        _, o_H, o_W = img.shape
+        image, bbox, label = in_data
+        _, H, W = image.shape
+        image = preprocess(image, self.min_size, self.max_size)
+        _, o_H, o_W = image.shape
         scale = o_H / H
         bbox = util.resize_bbox(bbox, (H, W), (o_H, o_W))
 
         # Flip horizontally
-        img, params = util.random_flip(img, x_random=True, return_param=True)
+        image, params = util.random_flip(image, x_random=True, return_param=True)
         bbox = util.flip_bbox(bbox, (o_H, o_W), x_flip=params['x_flip'])
 
-        return img, bbox, label, scale
+        return image, bbox, label, scale
 
 
 class Dataset:
@@ -69,25 +70,28 @@ class Dataset:
         self.db = VOCBboxDataset(opt.voc_data_dir)
         self.tsf = Transform(opt.min_size, opt.max_size)
 
-    def __getitem__(self, index):
-        ori_img, bbox, label, difficult = self.db.get_example(index)
-
-        img, bbox, label, scale = self.tsf((ori_img, bbox, label))
-        return img.copy(), bbox.copy(), label.copy(), scale
-
     def __len__(self):
         return len(self.db)
+
+    def __getitem__(self, index):
+        ori_image, bbox, label, difficult = self.db.get_example(index)
+        image, bbox, label, scale = self.tsf((ori_image, bbox, label))
+
+        return image.copy(), bbox.copy(), label.copy(), scale
 
 
 class TestDataset:
     def __init__(self, opt, split='test', use_difficult=True):
         self.opt = opt
         self.db = VOCBboxDataset(opt.voc_data_dir, split=split, use_difficult=use_difficult)
-
-    def __getitem__(self, index):
-        ori_img, bbox, label, difficult = self.db.get_example(index)
-        img = preprocess(ori_img)
-        return img, ori_img.shape[1:], bbox, label, difficult
-
+    
     def __len__(self):
         return len(self.db)
+
+    def __getitem__(self, index):
+        ori_image, bbox, label, difficult = self.db.get_example(index)
+        image = preprocess(ori_image)
+
+        return image, ori_image.shape[1:], bbox, label, difficult
+
+
