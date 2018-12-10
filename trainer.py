@@ -7,7 +7,7 @@ from torch.nn import functional as F
 from torchnet.meter import ConfusionMeter, AverageValueMeter
 from collections import namedtuple
 from model.utils.creator_tool import AnchorTargetCreator, ProposalTargetCreator
-from utils import array_tool as at
+from utils import array_tool
 from utils.vis_tool import Visualizer
 from utils.config import opt
 
