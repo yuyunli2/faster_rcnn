@@ -1,6 +1,6 @@
 import torch
 from torch.autograd import Function
-import cupy as cp
+import cupy
 # factory function for creating tuple subclasses with named fields
 from collections import namedtuple
 from string import Template
@@ -10,7 +10,7 @@ Stream = namedtuple('Stream', ['ptr'])
 
 @cupy.util.memoize(for_each_device=True)
 def load_kernel(kernel_name, code, **kwargs):
-    cp.cuda.runtime.free(0)
+    cupy.cuda.runtime.free(0)
     code = Template(code).substitute(**kwargs)
     kernel_code = cupy.cuda.compile_with_cache(code)
     return kernel_code.get_function(kernel_name)
