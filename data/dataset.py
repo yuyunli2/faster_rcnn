@@ -1,3 +1,5 @@
+from __future__ import  absolute_import
+from __future__ import  division
 import torch
 import numpy as np
 from data import util
@@ -5,8 +7,7 @@ from utils.config import opt
 from skimage import transform
 from torchvision import transforms
 from data.voc_dataset import VOCBboxDataset
-from __future__ import  absolute_import
-from __future__ import  division
+
 
 # Constants
 mean = [0.485, 0.456, 0.406]
