@@ -42,8 +42,9 @@ class RegionProposalNetwork(nn.Module):
 
         rpn_locs = rpn_locs.permute(0, 2, 3, 1).contiguous().view(n, -1, 4)
         rpn_scores = rpn_scores.permute(0, 2, 3, 1).contiguous().view(n, -1, 2)
-        rpn_fg_scores = rpn_softmax_scores[:, :, :, :, 1].contiguous().view(n, -1)
         rpn_softmax_scores = F.softmax(rpn_scores.view(n, height, width, n_anchor, 2), dim=4)
+        rpn_fg_scores = rpn_softmax_scores[:, :, :, :, 1].contiguous().view(n, -1)
+       
 
         for i in range(n):
             roi = self.proposal_layer(rpn_locs[i].cpu().data.numpy(), rpn_fg_scores[i].cpu().data.numpy(),
