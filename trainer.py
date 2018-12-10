@@ -60,7 +60,7 @@ class FasterRCNNTrainer(nn.Module):
         sample_roi, gt_roi_loc, gt_roi_label = self.proposal_target_creator(roi, array_tool.tonumpy(bbox),
             				    array_tool.tonumpy(label), self.loc_normalize_mean, self.loc_normalize_std)
 
-        sample_roi_index = t.zeros(len(sample_roi))
+        sample_roi_index = torch.zeros(len(sample_roi))
         roi_cls_loc, roi_score = self.faster_rcnn.head(features, sample_roi, sample_roi_index)
 
         # RPN losses
