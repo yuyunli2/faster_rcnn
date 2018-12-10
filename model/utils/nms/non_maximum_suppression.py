@@ -24,7 +24,6 @@ def _load_kernel(kernel_name, code, options=()):
 def non_maximum_suppression(bbox, thresh, score=None,
                             limit=None):
     """Suppress bounding boxes according to their IoUs.
-
     This method checks each bounding box sequentially and selects the bounding
     box if the Intersection over Unions (IoUs) between the bounding box and the
     previously selected bounding boxes is less than :obj:`thresh`. This method
@@ -32,22 +31,18 @@ def non_maximum_suppression(bbox, thresh, score=None,
     The bounding boxes are selected from ones with higher scores.
     If :obj:`score` is not provided as an argument, the bounding box
     is ordered by its index in ascending order.
-
     The bounding boxes are expected to be packed into a two dimensional
     tensor of shape :math:`(R, 4)`, where :math:`R` is the number of
     bounding boxes in the image. The second axis represents attributes of
     the bounding box. They are :math:`(y_{min}, x_{min}, y_{max}, x_{max})`,
     where the four attributes are coordinates of the top left and the
     bottom right vertices.
-
     :obj:`score` is a float array of shape :math:`(R,)`. Each score indicates
     confidence of prediction.
-
     This function accepts both :obj:`numpy.ndarray` and :obj:`cupy.ndarray` as
     an input. Please note that both :obj:`bbox` and :obj:`score` need to be
     the same type.
     The type of the output is the same as the input.
-
     Args:
         bbox (array): Bounding boxes to be transformed. The shape is
             :math:`(R, 4)`. :math:`R` is the number of bounding boxes.
@@ -56,7 +51,6 @@ def non_maximum_suppression(bbox, thresh, score=None,
         limit (int): The upper bound of the number of the output bounding
             boxes. If it is not specified, this method selects as many
             bounding boxes as possible.
-
     Returns:
         array:
         An array with indices of bounding boxes that are selected. \
@@ -64,7 +58,6 @@ def non_maximum_suppression(bbox, thresh, score=None,
         order. \
         The shape of this array is :math:`(K,)` and its dtype is\
         :obj:`numpy.int32`. Note that :math:`K \\leq R`.
-
     """
 
     return _non_maximum_suppression_gpu(bbox, thresh, score, limit)
@@ -94,7 +87,6 @@ def _non_maximum_suppression_gpu(bbox, thresh, score=None, limit=None):
 _nms_gpu_code = '''
 #define DIVUP(m,n) ((m) / (n) + ((m) % (n) > 0))
 int const threadsPerBlock = sizeof(unsigned long long) * 8;
-
 __device__
 inline float devIoU(float const *const bbox_a, float const *const bbox_b) {
   float top = max(bbox_a[0], bbox_b[0]);
@@ -108,7 +100,6 @@ inline float devIoU(float const *const bbox_a, float const *const bbox_b) {
   float area_b = (bbox_b[2] - bbox_b[0]) * (bbox_b[3] - bbox_b[1]);
   return area_i / (area_a + area_b - area_i);
 }
-
 extern "C"
 __global__
 void nms_kernel(const int n_bbox, const float thresh,
@@ -116,12 +107,10 @@ void nms_kernel(const int n_bbox, const float thresh,
                 unsigned long long *dev_mask) {
   const int row_start = blockIdx.y;
   const int col_start = blockIdx.x;
-
   const int row_size =
         min(n_bbox - row_start * threadsPerBlock, threadsPerBlock);
   const int col_size =
         min(n_bbox - col_start * threadsPerBlock, threadsPerBlock);
-
   __shared__ float block_bbox[threadsPerBlock * 4];
   if (threadIdx.x < col_size) {
     block_bbox[threadIdx.x * 4 + 0] =
@@ -134,7 +123,6 @@ void nms_kernel(const int n_bbox, const float thresh,
         dev_bbox[(threadsPerBlock * col_start + threadIdx.x) * 4 + 3];
   }
   __syncthreads();
-
   if (threadIdx.x < row_size) {
     const int cur_box_idx = threadsPerBlock * row_start + threadIdx.x;
     const float *cur_box = dev_bbox + cur_box_idx * 4;
