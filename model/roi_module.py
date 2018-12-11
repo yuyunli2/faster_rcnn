@@ -26,10 +26,10 @@ class RoIPooling2D(torch.nn.Module):
 
 
 class RoI(Function):
-    def __init__(self, h, w, spatial_scale):
+    def __init__(self, height, width, spatial_scale):
         self.forward_fn = load_kernel('roi_forward', kernel_forward)
         self.backward_fn = load_kernel('roi_backward', kernel_backward)
-        self.h, self.w, self.spatial_scale = h, w, spatial_scale
+        self.height, self.width, self.spatial_scale = height, width, spatial_scale
 
     def forward(self, x, rois):
         x = x.contiguous()
@@ -38,13 +38,13 @@ class RoI(Function):
         self.in_size = B, C, H, W = x.size()
         N = rois.size(0)
         self.N = N
-        output = torch.zeros(N, C, self.h, self.w).cuda()
-        self.argmax_data = torch.zeros(N, C, self.h, self.w).int().cuda()
+        output = torch.zeros(N, C, self.height, self.width).cuda()
+        self.argmax_data = torch.zeros(N, C, self.height, self.width).int().cuda()
         self.rois = rois
 
         args = [x.data_ptr(), rois.data_ptr(), output.data_ptr(),
                 self.argmax_data.data_ptr(), self.spatial_scale, C, H, W,
-                self.h, self.w, output.numel()]
+                self.height, self.width, output.numel()]
         stream = Stream(ptr=torch.cuda.current_stream().cuda_stream)
         self.forward_fn(args=args, block=(1024, 1, 1), grid=((output.numel()+1024-1)//1024, 1, 1), stream=stream)
         
@@ -57,7 +57,7 @@ class RoI(Function):
         stream = Stream(ptr=torch.cuda.current_stream().cuda_stream)
         args = [grad_output.data_ptr(), self.argmax_data.data_ptr(),
                 self.rois.data_ptr(), grad_input.data_ptr(), self.N, self.spatial_scale, 
-                C, H, W, self.h, self.w, grad_input.numel()]
+                C, H, W, self.height, self.width, grad_input.numel()]
         self.backward_fn(args=args, block=(1024, 1, 1), grid=((grad_input.numel()+1024-1)//1024, 1, 1), stream=stream)
         
         return grad_input, None

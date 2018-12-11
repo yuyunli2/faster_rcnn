@@ -1,13 +1,13 @@
 from __future__ import division
 from __future__ import  absolute_import
 import torch
-import numpy as np
-import cupy as cp
-from data.dataset import preprocess
-from utils import array_tool
-from utils.config import opt
 from torch import nn
 from torch.nn import functional as F
+import numpy as np
+import cupy as cp
+from dataset import preprocess
+from . import array_tool
+from config import opt
 from model.utils.nms import non_maximum_suppression
 from model.utils.bbox_tools import loc2bbox
 

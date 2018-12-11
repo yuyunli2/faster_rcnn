@@ -5,8 +5,8 @@ from torchvision.models import vgg16
 from model.region_proposal_network import RegionProposalNetwork
 from model.faster_rcnn import FasterRCNN
 from model.roi_module import RoIPooling2D
-from utils import array_tool
-from utils.config import opt
+from . import array_tool
+from config import opt
 
 
 def decom_vgg16():
@@ -29,6 +29,16 @@ def decom_vgg16():
             p.requires_grad = False
 
     return nn.Sequential(*features), classifier
+
+
+# Initialize weight
+def normal_init(x, mean, std, truncated=False):
+    if(truncated):
+        x.weight.data.normal_().fmod_(2).mul_(std).add_(mean)
+    else:
+        x.weight.data.normal_(mean, std)
+        x.bias.data.zero_()
+
 
 # Faster R-CNN based on VGG-16
 class FasterRCNNVGG16(FasterRCNN):
@@ -72,11 +82,3 @@ class VGG16RoIHead(nn.Module):
         roi_cls_locs = self.cls_loc(fc7)
         roi_scores = self.score(fc7)
         return roi_cls_locs, roi_scores
-
-
-def normal_init(x, mean, std, truncated=False):
-    if(truncated):
-        x.weight.data.normal_().fmod_(2).mul_(std).add_(mean)
-    else:
-        x.weight.data.normal_(mean, std)
-        x.bias.data.zero_()

@@ -33,7 +33,7 @@ class RegionProposalNetwork(nn.Module):
         roi_indices = list()
         anchor = _enumerate_shifted_anchor(np.array(self.anchor_base), self.feat_stride, height, width)
 
-        n_anchor = anchor.shape[0] // (height*width)
+        n_anchor = anchor.shape[0]//(height*width)
         x = self.conv1(x)
         h = F.leaky_relu(x)
 
@@ -45,10 +45,8 @@ class RegionProposalNetwork(nn.Module):
         rpn_softmax_scores = F.softmax(rpn_scores.view(n, height, width, n_anchor, 2), dim=4)
         rpn_fg_scores = rpn_softmax_scores[:, :, :, :, 1].contiguous().view(n, -1)
        
-
         for i in range(n):
-            roi = self.proposal_layer(rpn_locs[i].cpu().data.numpy(), rpn_fg_scores[i].cpu().data.numpy(),
-                                      anchor, img_size, scale=scale)
+            roi = self.proposal_layer(rpn_locs[i].cpu().data.numpy(), rpn_fg_scores[i].cpu().data.numpy(), anchor, img_size, scale=scale)
             batch_index = i * np.ones((len(roi),), dtype=np.int32)
             rois.append(roi)
             roi_indices.append(batch_index)
